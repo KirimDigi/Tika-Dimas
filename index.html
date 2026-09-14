@@ -5697,37 +5697,58 @@
             <div class="elementor-widget-container">
               <script>
                 jQuery(document).ready(function ($) {
-                  //Tombol Share to IG Cover
-                  document.querySelector('.downloadInv').addEventListener('click', function (e) {
+                  //Tombol Share to IG Cover (pakai onclick agar tidak double-bind saat popup dibuka ulang)
+                  var btn = document.querySelector('.downloadInv');
+                  if (!btn) return;
+                  btn.onclick = function (e) {
                     e.preventDefault();
-                    $('.downloadInv .elementor-button-text').html('Plesae wait...');
-                    $('.downloadInv i').removeClass('fas fa-download');
-                    $('.downloadInv i').addClass('fa fa-spinner fa-spin');
-                    setTimeout(() => {
-                      html2canvas(document.getElementById('secCover'), {
-                        logging: false, //sembunyikan log dari console
-                        useCORS: true,  //Gunakan CORS
-                        proxy: "https://youinvited.id/",
-                        imageTimeout: 30000, //Timeout 
-                        allowTaint: true,
-                        scale: 1.5,
-                        width: window.innerWidth,
-                        height: window.innerHeight,
-                        scrollX: window.pageXOffset,
-                        scrollY: window.pageYOffset,
-                        x: window.pageXOffset,
-                        y: window.pageYOffset
-                      }).then(function (canvas) {
-                        downloadURI(canvas.toDataURL("image/png"), 'eInvitation.png');
-                        $('.downloadInv .elementor-button-text').html('Download e-Invitation');
+                    if (btn.dataset.busy === '1') return;
+                    btn.dataset.busy = '1';
+                    var btnText = document.querySelector('.downloadInv .elementor-button-text');
+                    var oldHtml = btnText ? btnText.innerHTML : '';
+                    if (btnText) btnText.innerHTML = 'Please wait...';
+                    // Sembunyikan tombol saat screenshot agar tidak ikut ke-capture
+                    btn.style.visibility = 'hidden';
+                    setTimeout(async () => {
+                      var el = document.getElementById('secCover');
+                      function done() {
+                        btn.style.visibility = '';
+                        btn.dataset.busy = '';
+                        if (btnText) btnText.innerHTML = 'Download e-Invitation';
                         $('.downloadInv i').removeClass('fa fa-spinner fa-spin');
                         $('.downloadInv i').addClass('fas fa-download');
-
-                      });
+                      }
+                      try {
+                        if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) { } }
+                        // Matikan animasi sesaat agar teks "The Wedding Of / Tika & Dimas" ke-capture solid
+                        var animated = el.querySelectorAll('.animated-slow, .elementor-invisible');
+                        var prev = [];
+                        animated.forEach(function (n) {
+                          prev.push([n, n.style.opacity, n.style.animation]);
+                          n.style.opacity = '1';
+                          n.style.animation = 'none';
+                        });
+                        var dataUrl = null;
+                        if (window.htmlToImage && window.htmlToImage.toPng) {
+                          dataUrl = await window.htmlToImage.toPng(el, { cacheBust: true, pixelRatio: 2, backgroundColor: '#ffffff' });
+                        } else if (window.html2canvas) {
+                          window.scrollTo(0, 0);
+                          var canvas = await html2canvas(el, { logging: false, backgroundColor: '#ffffff', scale: 2, useCORS: true, imageTimeout: 15000 });
+                          dataUrl = canvas.toDataURL("image/png");
+                        } else {
+                          alert('Gagal memuat library screenshot. Cek koneksi internet.');
+                        }
+                        prev.forEach(function (r) { r[0].style.opacity = r[1]; r[0].style.animation = r[2]; });
+                        if (dataUrl) downloadURI(dataUrl, 'eInvitation.png');
+                      } catch (err) {
+                        console.error('screenshot gagal:', err);
+                        alert('Gagal membuat gambar. Coba lagi.');
+                      }
+                      done();
                     }, 500)
 
 
-                  });
+                  };
                 })
                 function downloadURI(uri, name) {
                   const link = document.createElement("a");
@@ -5742,7 +5763,8 @@
                   }
                 }
               </script>
-              <script src="./npm/html2canvas%401.4.1/dist/html2canvas.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+              <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
             </div>
           </div>
         </div>
