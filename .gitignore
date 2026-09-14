@@ -1,0 +1,6 @@
+# Ignore temporary files
+temp.zip
+extracted_xlsx/
+tr
+webcopy-origin.txt
+npm/
